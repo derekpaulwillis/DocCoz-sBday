@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Instructor Identity Verification Portal</title>
+  <style>
+    :root{--bg:#0b1020;--card:rgba(255,255,255,0.08);--border:rgba(255,255,255,0.18);--text:rgba(255,255,255,0.92);--muted:rgba(255,255,255,0.72);--accent:#7cf7d4}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);background:radial-gradient(1200px 800px at 20% 10%, rgba(124,247,212,0.18), transparent 55%),radial-gradient(1100px 700px at 80% 30%, rgba(255,119,170,0.16), transparent 60%),var(--bg);min-height:100vh;display:grid;place-items:center;padding:24px}
+    .wrap{width:min(760px,100%)}
+    .badge{display:inline-flex;gap:10px;align-items:center;padding:8px 12px;border:1px solid var(--border);background:rgba(255,255,255,0.06);border-radius:999px;font-size:14px;color:var(--muted)}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(124,247,212,0.7);animation:pulse 1.8s ease-in-out infinite}
+    @keyframes pulse{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.35);opacity:1}}
+    .card{margin-top:14px;border:1px solid var(--border);background:var(--card);backdrop-filter:blur(10px);border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+    h1{margin:0 0 10px 0;font-size:clamp(28px,4vw,44px);line-height:1.05;letter-spacing:-.02em}
+    p{margin:0 0 14px 0;color:var(--muted);font-size:16px}
+    .row{display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px}
+    .field{border:1px dashed rgba(255,255,255,0.25);border-radius:14px;padding:14px;background:rgba(0,0,0,0.16)}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:var(--text);outline:none;font-size:16px}
+    input::placeholder{color:rgba(255,255,255,0.45)}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.08);color:var(--text);padding:12px 14px;border-radius:14px;font-size:15px;cursor:pointer}
+    .primary{border-color:rgba(124,247,212,0.55);box-shadow:0 0 0 4px rgba(124,247,212,0.10)}
+    .tiny{margin-top:14px;font-size:13px;color:rgba(255,255,255,0.55)}
+    .reveal{display:none;margin-top:16px;border-radius:16px;padding:16px;border:1px solid rgba(124,247,212,0.40);background:rgba(124,247,212,0.10)}
+    .reveal h2{margin:0 0 8px 0;font-size:24px}
+    .confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;display:none}
+    .piece{position:absolute;top:-10vh;width:10px;height:18px;opacity:.9;animation:fall linear forwards}
+    @keyframes fall{to{transform:translateY(120vh) rotate(720deg)}}
+    #terminal{margin-top:16px;padding:16px;border-radius:12px;background:#000;color:#00ff9c;font-family:monospace;font-size:14px;min-height:90px;border:1px solid rgba(0,255,156,0.4)}
+    .progress{margin-top:10px;height:10px;border-radius:999px;overflow:hidden;border:1px solid rgba(0,255,156,0.35);background:rgba(0,255,156,0.10)}
+    .progress__bar{height:100%;width:0%;background:linear-gradient(90deg, rgba(0,255,156,0.9), rgba(124,247,212,0.9));transition:width 180ms ease}
+    .footer{margin-top:14px;text-align:center;color:rgba(255,255,255,0.5);font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span><span><strong>SECURITY NOTICE:</strong> Human-factor vulnerability detected.</span></div>
+
+    <div class="card">
+      <h1>Instructor Identity Verification Portal</h1>
+      <p>To proceed, please verify the instructor using at least three independent factors.</p>
+
+      <div class="row">
+        <div class="field">
+          <label>Instructor full legal name</label>
+          <input id="name" placeholder="e.g., Jessie (Definitely Not A Robot)">
+        </div>
+        <div class="field">
+          <label>Mother's maiden name</label>
+          <input placeholder="nice try">
+        </div>
+        <div class="field">
+          <label>Social Security Number</label>
+          <input placeholder="absolutely not">
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="verifyBtn">Verify Instructor</button>
+        <button id="skipBtn">Skip (I Trust Vibes)</button>
+      </div>
+
+      <div id="terminal"></div>
+      <div class="progress" aria-label="Verification progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="progress__bar" id="progressBar"></div>
+      </div>
+
+      <div class="reveal" id="reveal">
+        <h2>Verification Complete</h2>
+        <p id="msg"></p>
+      </div>
+
+      <div class="tiny"><strong>Disclaimer:</strong> This portal is 0% real, 100% love, and 200% a teachable moment.</div>
+    </div>
+
+    <div class="footer">If you scanned a random QR code in a hallway… the lesson is working.</div>
+  </div>
+
+  <div class="confetti" id="confetti"></div>
+
+<script>
+const verifyBtn=document.getElementById('verifyBtn');
+const skipBtn=document.getElementById('skipBtn');
+const reveal=document.getElementById('reveal');
+const msg=document.getElementById('msg');
+const confetti=document.getElementById('confetti');
+const progressBar=document.getElementById('progressBar');
+
+// URL trick: allow the QR/link to look like a legit notice.
+// Example URL: https://your.site/?notice=Security%20Alert&ref=IT-2026-031&room=McCool%20123
+(function applyUrlFlavor(){
+  const p=new URLSearchParams(window.location.search);
+  const notice=p.get('notice');
+  const ref=p.get('ref');
+  const room=p.get('room');
+  const badge=document.querySelector('.badge span:last-child');
+  if(notice){
+    const refText=ref?` (${ref})`:'';
+    const roomText=room?` • Room: ${room}`:'';
+    badge.innerHTML=`<strong>${notice.toUpperCase()}:</strong> Human-factor vulnerability detected${refText}${roomText}.`;
+    document.title=notice + (ref?` - ${ref}`:'');
+  }
+})();
+
+function setProgress(pct){
+  const clamped=Math.max(0,Math.min(100,pct));
+  progressBar.style.width=clamped+'%';
+  const pr=document.querySelector('.progress');
+  pr.setAttribute('aria-valuenow', String(clamped));
+}
+
+function playAccessGranted(){
+  // Tiny “access granted” beep using WebAudio (no external files).
+  try{
+    const ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.type='square';
+    o.frequency.value=880;
+    g.gain.value=0.03;
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{o.frequency.value=660;},90);
+    setTimeout(()=>{o.stop(); ctx.close();},180);
+  }catch(e){/* ignore */}
+}
+
+function typeLine(text,speed=30){
+  return new Promise(resolve=>{
+    const term=document.getElementById('terminal');
+    let i=0;
+    function type(){
+      if(i<text.length){
+        term.innerHTML+=text.charAt(i);
+        i++;
+        setTimeout(type,speed);
+      }else{
+        term.innerHTML+="<br>";
+        resolve();
+      }
+    }
+    type();
+  });
+}
+
+async function showReveal(){
+  const term=document.getElementById('terminal');
+  term.innerHTML="";
+  reveal.style.display='none';
+  setProgress(0);
+
+  const steps=[
+    "Initializing instructor verification protocol...",
+    "Scanning classroom network...",
+    "Analyzing social engineering vectors...",
+    "Locating target: Dr. Cossitt...",
+    "Injecting birthday payload...",
+    "SUCCESS."
+  ];
+
+  for(let i=0;i<steps.length;i++){
+    await typeLine(steps[i]);
+    setProgress(Math.round(((i+1)/steps.length)*100));
+    // tiny pause for drama
+    await new Promise(r=>setTimeout(r,120));
+  }
+
+  reveal.style.display='block';
+  msg.textContent="🎉 HAPPY BIRTHDAY DR. COSSITT! 🎉 Congrats — you just made Dr. Cossitt smile a little more. Her lessons are clearly paying off for her white hat brigade.";
+
+  playAccessGranted();
+  launchConfetti();
+}
+
+function launchConfetti(){
+  confetti.innerHTML='';
+  confetti.style.display='block';
+  const colors=['#7cf7d4','#ff77aa','#8aa7ff','#ffd86b','#ffffff'];
+  for(let i=0;i<100;i++){
+    const d=document.createElement('div');
+    d.className='piece';
+    d.style.left=Math.random()*100+'vw';
+    d.style.background=colors[Math.floor(Math.random()*colors.length)];
+    d.style.animationDuration=(2.5+Math.random()*2.5)+'s';
+    d.style.width=(6+Math.random()*10)+'px';
+    d.style.height=(10+Math.random()*18)+'px';
+    confetti.appendChild(d);
+  }
+  setTimeout(()=>{confetti.style.display='none'},4500);
+}
+
+verifyBtn.addEventListener('click',showReveal);
+skipBtn.addEventListener('click',showReveal);
+</script>
+</body>
+</html>
