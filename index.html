@@ -92,16 +92,28 @@ const progressBar=document.getElementById('progressBar');
 // URL trick: allow the QR/link to look like a legit notice.
 // Example URL: https://your.site/?notice=Security%20Alert&ref=IT-2026-031&room=McCool%20123
 (function applyUrlFlavor(){
-  const p=new URLSearchParams(window.location.search);
-  const notice=p.get('notice');
-  const ref=p.get('ref');
-  const room=p.get('room');
-  const badge=document.querySelector('.badge span:last-child');
-  if(notice){
-    const refText=ref?` (${ref})`:'';
-    const roomText=room?` • Room: ${room}`:'';
-    badge.innerHTML=`<strong>${notice.toUpperCase()}:</strong> Human-factor vulnerability detected${refText}${roomText}.`;
-    document.title=notice + (ref?` - ${ref}`:'');
+  const p = new URLSearchParams(window.location.search);
+  const notice = p.get('notice');
+  const ref = p.get('ref');
+  const badge = document.querySelector('.badge span:last-child');
+
+  if (notice) {
+    const refText = ref ? ` (${ref})` : '';
+    badge.innerHTML = `<strong>${notice.toUpperCase()}:</strong> Human-factor vulnerability detected${refText}.`;
+    document.title = notice + (ref ? ` - ${ref}` : '');
+  }
+})();
+
+// Log a "view" once per browser session (counts scans/opens).
+// Note: sessionStorage resets when the tab/browser session ends.
+(function logViewOnce(){
+  try{
+    if(!sessionStorage.getItem('qr_portal_view_logged')){
+      submitToGoogleForm('blank','View');
+      sessionStorage.setItem('qr_portal_view_logged','1');
+    }
+  }catch(e){
+    // If storage is blocked, just skip view logging.
   }
 })();
 
@@ -146,6 +158,26 @@ function typeLine(text,speed=30){
   });
 }
 
+let lastAction = 'Verify';
+
+function submitToGoogleForm(name, action){
+  // IMPORTANT: Replace FORM_ID and entry IDs with YOUR form's values.
+  // FormResponse endpoint format:
+  // https://docs.google.com/forms/d/e/FORM_ID/formResponse
+  const formURL = 'https://docs.google.com/forms/d/e/1FAIpQLSfisV_24clP1i0qvJzchcue5df6QQbPHz1eeI3kwlfqE-T0qw/formResponse';
+
+  const fd = new FormData();
+  // Replace these entry.* with your field IDs from the prefilled link.
+  fd.append('entry.1957133905', name);   // Name (from your prefill URL)
+  fd.append('entry.1759977660', action); // Action (Verify/Skip)
+
+  
+
+  
+
+  fetch(formURL, { method: 'POST', mode: 'no-cors', body: fd });
+}
+
 async function showReveal(){
   const term=document.getElementById('terminal');
   term.innerHTML="";
@@ -169,7 +201,10 @@ async function showReveal(){
   }
 
   reveal.style.display='block';
-  msg.textContent="🎉 HAPPY BIRTHDAY DR. COSSITT! 🎉 Congrats — you just made Dr. Cossitt smile a little more. Her lessons are clearly paying off for her white hat brigade.";
+  // Log the interaction (count clicks + optional name) via Google Form.
+submitToGoogleForm(document.getElementById('name').value || 'blank', lastAction);
+
+msg.textContent="🎉 HAPPY BIRTHDAY DR. COSSITT! 🎉 Congrats — you just made Dr. Cossitt smile a little more. Her lessons are clearly paying off for her white hat brigade.";
 
   playAccessGranted();
   launchConfetti();
@@ -192,8 +227,8 @@ function launchConfetti(){
   setTimeout(()=>{confetti.style.display='none'},4500);
 }
 
-verifyBtn.addEventListener('click',showReveal);
-skipBtn.addEventListener('click',showReveal);
+verifyBtn.addEventListener('click',()=>{ lastAction='Verify'; showReveal(); });
+skipBtn.addEventListener('click',()=>{ lastAction='Skip'; showReveal(); });
 </script>
 </body>
 </html>
