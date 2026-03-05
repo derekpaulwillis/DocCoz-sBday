@@ -45,8 +45,8 @@
 
       <div class="row">
         <div class="field">
-          <label>Instructor full legal name</label>
-          <input id="name" placeholder="e.g., Jessie (Definitely Not A Robot)">
+          <label>What do you wanna say to her? (Nickname / vibe for Jessie)</label>
+          <input id="name" placeholder="e.g., Happy Birthday Dr. Cossitt!, Queen of White Hats!, Jessie the Legend…">
         </div>
         <div class="field">
           <label>Mother's maiden name</label>
@@ -104,19 +104,6 @@ const progressBar=document.getElementById('progressBar');
   }
 })();
 
-// Log a "view" once per browser session (counts scans/opens).
-// Note: sessionStorage resets when the tab/browser session ends.
-(function logViewOnce(){
-  try{
-    if(!sessionStorage.getItem('qr_portal_view_logged')){
-      submitToGoogleForm('blank','View');
-      sessionStorage.setItem('qr_portal_view_logged','1');
-    }
-  }catch(e){
-    // If storage is blocked, just skip view logging.
-  }
-})();
-
 function setProgress(pct){
   const clamped=Math.max(0,Math.min(100,pct));
   progressBar.style.width=clamped+'%';
@@ -168,15 +155,12 @@ function submitToGoogleForm(name, action){
 
   const fd = new FormData();
   // Replace these entry.* with your field IDs from the prefilled link.
-  fd.append('entry.1957133905', name);   // Name (from your prefill URL)
+  fd.append('entry.10637021', name);   // Name (from your prefill URL)
   fd.append('entry.1759977660', action); // Action (Verify/Skip)
-
-  
-
-  
 
   fetch(formURL, { method: 'POST', mode: 'no-cors', body: fd });
 }
+
 
 async function showReveal(){
   const term=document.getElementById('terminal');
